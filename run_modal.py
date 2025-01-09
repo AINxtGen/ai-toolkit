@@ -7,7 +7,6 @@ modal run run_modal.py --config-file-list-str=/root/ai-toolkit/config/whatever_y
 '''
 
 import os
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 import sys
 import modal
 from dotenv import load_dotenv
@@ -30,7 +29,7 @@ MOUNT_DIR = "/root/ai-toolkit/modal_output"  # modal_output, due to "cannot moun
 
 # define modal app
 image = (
-    modal.Image.debian_slim(python_version="3.11")
+    modal.Image.from_registry("nvidia/cuda:12.4.0-devel-ubuntu22.04", add_python="3.12")
     # install required system and pip packages, more about this modal approach: https://modal.com/docs/examples/dreambooth_app
     .apt_install("libgl1", "libglib2.0-0")
     .pip_install(
@@ -69,11 +68,16 @@ image = (
         "huggingface_hub", 
         "peft"
     )
+    .env({
+        "HF_HUB_ENABLE_HF_TRANSFER": "1",
+        "HF_TOKEN": os.getenv("HF_TOKEN"),
+        "CUDA_HOME": "/usr/local/cuda-12"
+    })
 )
 
 # mount for the entire ai-toolkit directory
 # example: "/Users/username/ai-toolkit" is the local directory, "/root/ai-toolkit" is the remote directory
-code_mount = modal.Mount.from_local_dir("/Users/username/ai-toolkit", remote_path="/root/ai-toolkit")
+code_mount = modal.Mount.from_local_dir(os.path.dirname(os.path.abspath(__file__)), remote_path="/root/ai-toolkit")
 
 # create the Modal app with the necessary mounts and volumes
 app = modal.App(name="flux-lora-training", image=image, mounts=[code_mount], volumes={MOUNT_DIR: model_volume})
@@ -104,7 +108,7 @@ def print_end_message(jobs_completed, jobs_failed):
 @app.function(
     # request a GPU with at least 24GB VRAM
     # more about modal GPU's: https://modal.com/docs/guide/gpu
-    gpu="A100", # gpu="H100"
+    gpu="H100", # gpu="H100"
     # more about modal timeouts: https://modal.com/docs/guide/timeouts
     timeout=7200  # 2 hours, increase or decrease if needed
 )
