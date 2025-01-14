@@ -2,7 +2,7 @@
 job: extension
 config:
   # this name will be the folder and filename name
-  name: "woven_seagrass_basket"
+  name: "woven_seagrass_basket_v1"
   process:
     - type: 'sd_trainer'
       # root folder to save training sessions/samples/weights
@@ -28,7 +28,7 @@ config:
         # on windows, escape back slashes with another backslash so
         # "C:\\path\\to\\images\\folder"
         # your dataset must be placed in /ai-toolkit and /root is for modal to find the dir:
-        - folder_path: "/root/ai-toolkit/datasets/woven_seagrass_basket"
+        - folder_path: "/root/ai-toolkit/woven_seagrass_basket"
           caption_ext: "txt"
           caption_dropout_rate: 0.05  # will drop out the caption 5% of time
           shuffle_tokens: false  # shuffle caption order, split by commas
@@ -65,7 +65,7 @@ config:
         # place it like "/root/ai-toolkit/FLUX.1-dev"
         name_or_path: "black-forest-labs/FLUX.1-dev"
         is_flux: true
-        quantize: true  # run 8bit mixed precision
+        quantize: false  # run 8bit mixed precision
 #        low_vram: true  # uncomment this if the GPU is connected to your monitors. It will use less vram to quantize, but is slower.
       sample:
         sampler: "flowmatch" # must match train.noise_scheduler
@@ -73,8 +73,7 @@ config:
         width: 1024
         height: 1024
         prompts:
-          # you can add [trigger] to the prompts here and it will be replaced with the trigger word
-#          - "[trigger] holding a sign that says 'I LOVE PROMPTS!'"\
+          - "a woven seagrass basket placed on a clean, white table. The basket is rectangular in shape and divided into multiple compartments, making it suitable for organizing condiments and small bottles. The compartments hold a variety of items, including sauce bottles, seasoning jars, and condiments such as ketchup, mayonnaise, and oil. The natural light brown color of the seagrass material contrasts nicely with the modern white tabletop and surrounding items. The basket is both functional and aesthetically pleasing, ideal for a kitchen or dining setting."
         neg: ""  # not used on flux
         seed: 42
         walk_seed: true
