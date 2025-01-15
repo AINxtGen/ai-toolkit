@@ -221,20 +221,14 @@ if %errorlevel% neq 0 (
 )
 echo Modal token set successfully!
 echo.
-echo === Setup Complete! ===
-echo Activate venv:
 call venv\Scripts\activate
 echo === Next Steps ===
 echo Required files to prepare:
 echo 1. Configuration file:
-echo    - Create in config/ folder (templates available in config/examples/modal/)
-echo    - Customize settings according to your needs
+echo    - Customize settings according to your needs in config/modal_train_lora_flux.yaml
 echo 2. Environment file (.env):
 echo    - Add your Hugging Face token
 echo 3. Training data files
-echo.
-echo When all files are ready, training can be started with:
-echo modal run --detach run_modal.py --config-file-list-str=/root/ai-toolkit/config/modal_train_lora_flux.yaml
 echo.
 echo Press Enter when you have prepared all required files to begin training...
 pause
@@ -274,7 +268,7 @@ if not exist "config/modal_train_lora_flux.yaml" (
 )
 
 echo All required files are present. Starting training process...
-modal run --detach run_modal.py --config-file-list-str=/root/ai-toolkit/config/modal_train_lora_flux.yaml
+modal run --detach run_modal.py::main --config-file-list-str=/root/ai-toolkit/config/modal_train_lora_flux.yaml
 echo.
 echo Training process has started!
 echo You can monitor the training progress and logs at: https://modal.com/logs

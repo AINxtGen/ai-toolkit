@@ -27,6 +27,12 @@ model_volume = modal.Volume.from_name("flux-lora-models", create_if_missing=True
 # modal_output, due to "cannot mount volume on non-empty path" requirement
 MOUNT_DIR = "/root/ai-toolkit/modal_output"  # modal_output, due to "cannot mount volume on non-empty path" requirement
 
+FLUX_MODEL_VOLUME = modal.Volume.from_name(
+    "flux-base-models", 
+    create_if_missing=True
+)
+FLUX_MODEL_PATH = "/root/ai-toolkit/FLUX.1-dev"
+
 # define modal app
 image = (
     modal.Image.from_registry("nvidia/cuda:12.4.0-devel-ubuntu22.04", add_python="3.12")
@@ -73,14 +79,21 @@ image = (
         "HF_TOKEN": os.getenv("HF_TOKEN"),
         "CUDA_HOME": "/usr/local/cuda-12"
     })
+    .add_local_dir(
+        local_path=os.path.dirname(os.path.abspath(__file__)),
+        remote_path="/root/ai-toolkit"
+    )
 )
 
-# mount for the entire ai-toolkit directory
-# example: "/Users/username/ai-toolkit" is the local directory, "/root/ai-toolkit" is the remote directory
-code_mount = modal.Mount.from_local_dir(os.path.dirname(os.path.abspath(__file__)), remote_path="/root/ai-toolkit")
-
 # create the Modal app with the necessary mounts and volumes
-app = modal.App(name="flux-lora-training", image=image, mounts=[code_mount], volumes={MOUNT_DIR: model_volume})
+app = modal.App(
+    name="flux-lora-training", 
+    image=image,
+    volumes={
+        MOUNT_DIR: model_volume,
+        FLUX_MODEL_PATH: FLUX_MODEL_VOLUME
+    }
+)
 
 # Check if we have DEBUG_TOOLKIT in env
 if os.environ.get("DEBUG_TOOLKIT", "0") == "1":
@@ -108,11 +121,54 @@ def print_end_message(jobs_completed, jobs_failed):
 @app.function(
     # request a GPU with at least 24GB VRAM
     # more about modal GPU's: https://modal.com/docs/guide/gpu
-    gpu="H100", # gpu="H100"
+    gpu=modal.gpu.H100(count=1), # L40S,A10G,A100,H100
     # more about modal timeouts: https://modal.com/docs/guide/timeouts
     timeout=7200  # 2 hours, increase or decrease if needed
 )
 def main(config_file_list_str: str, recover: bool = False, name: str = None):
+    # Check and download FLUX model if needed
+    import os
+    from huggingface_hub import snapshot_download
+    from transformers.utils import move_cache
+    
+    print("Checking FLUX model...")
+    os.makedirs(FLUX_MODEL_PATH, exist_ok=True)
+    
+    def check_model_files(model_path):
+        # List of important files needed in a complete FLUX model
+        required_files = [
+            "model_index.json",
+            "flux1-dev.safetensors",
+            "ae.safetensors"
+        ]
+        
+        # Check each file
+        for file in required_files:
+            full_path = os.path.join(model_path, file)
+            if not os.path.exists(full_path):
+                return False
+        return True
+    model_exists = check_model_files(FLUX_MODEL_PATH)
+    
+    if not model_exists:
+        print(f"FLUX model not found. Downloading...")
+        try:
+            snapshot_download(
+                repo_id="black-forest-labs/FLUX.1-dev",
+                local_dir=FLUX_MODEL_PATH,
+                local_dir_use_symlinks=False,
+                resume_download=True,
+                token=os.getenv("HF_TOKEN")
+            )
+            move_cache()
+            FLUX_MODEL_VOLUME.commit()
+            print("FLUX model downloaded and cached successfully")
+        except Exception as e:
+            print(f"Warning: Failed to download/verify FLUX model - {e}")
+            raise e
+    else:
+        print(f"FLUX model already exists, skipping download")
+    
     # convert the config file list from a string to a list
     config_file_list = config_file_list_str.split(",")
 
