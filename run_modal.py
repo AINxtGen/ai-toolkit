@@ -128,14 +128,21 @@ def print_end_message(jobs_completed, jobs_failed):
 def main(config_file_list_str: str, recover: bool = False, name: str = None):
     # Check and download FLUX model if needed
     import os
-    from huggingface_hub import snapshot_download
     from transformers.utils import move_cache
-    
+    from huggingface_hub import snapshot_download
     print("Checking FLUX model...")
     os.makedirs(FLUX_MODEL_PATH, exist_ok=True)
     
+    def get_folder_size(folder_path):
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(folder_path):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                total_size += os.path.getsize(file_path)
+        return total_size
+
     def check_model_files(model_path):
-        # List of important files needed in a complete FLUX model
+        # Kiểm tra các file bắt buộc
         required_files = [
             "model_index.json",
             "flux1-dev.safetensors",
@@ -147,22 +154,36 @@ def main(config_file_list_str: str, recover: bool = False, name: str = None):
             full_path = os.path.join(model_path, file)
             if not os.path.exists(full_path):
                 return False
-        return True
+        
+        # Kiểm tra tổng dung lượng (53GB = 53 * 1024 * 1024 * 1024 bytes)
+        required_size = 53 * 1024 * 1024 * 1024  # 53GB in bytes
+        folder_size = get_folder_size(model_path)
+        
+        print(f"Current folder size: {folder_size / (1024*1024*1024):.2f}GB")
+        return folder_size >= required_size
+
     model_exists = check_model_files(FLUX_MODEL_PATH)
     
     if not model_exists:
         print(f"FLUX model not found. Downloading...")
         try:
+            os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+            os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+            
+            print("Starting download... This might take a while")
+            
+            def download_callback(evolution: str):
+                print(f"Download progress: {evolution}")
+            
             snapshot_download(
                 repo_id="black-forest-labs/FLUX.1-dev",
                 local_dir=FLUX_MODEL_PATH,
-                local_dir_use_symlinks=False,
-                resume_download=True,
-                token=os.getenv("HF_TOKEN")
+                use_auth_token=os.getenv("HF_TOKEN"),
+                tqdm_class=download_callback
             )
-            move_cache()
+            
             FLUX_MODEL_VOLUME.commit()
-            print("FLUX model downloaded and cached successfully")
+            print("FLUX model downloaded successfully")
         except Exception as e:
             print(f"Warning: Failed to download/verify FLUX model - {e}")
             raise e
