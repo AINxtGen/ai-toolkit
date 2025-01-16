@@ -126,70 +126,9 @@ def print_end_message(jobs_completed, jobs_failed):
     timeout=7200  # 2 hours, increase or decrease if needed
 )
 def main(config_file_list_str: str, recover: bool = False, name: str = None):
-    # Check and download FLUX model if needed
-    import os
-    from transformers.utils import move_cache
-    from huggingface_hub import snapshot_download
-    print("Checking FLUX model...")
-    os.makedirs(FLUX_MODEL_PATH, exist_ok=True)
-    
-    def get_folder_size(folder_path):
-        total_size = 0
-        for dirpath, dirnames, filenames in os.walk(folder_path):
-            for filename in filenames:
-                file_path = os.path.join(dirpath, filename)
-                total_size += os.path.getsize(file_path)
-        return total_size
+    if not os.path.exists(FLUX_MODEL_PATH):
+        raise Exception("FLUX model not found. Please run 'modal run run_modal.py::download_flux_model' first")
 
-    def check_model_files(model_path):
-        # Kiểm tra các file bắt buộc
-        required_files = [
-            "model_index.json",
-            "flux1-dev.safetensors",
-            "ae.safetensors"
-        ]
-        
-        # Check each file
-        for file in required_files:
-            full_path = os.path.join(model_path, file)
-            if not os.path.exists(full_path):
-                return False
-        
-        # Kiểm tra tổng dung lượng (53GB = 53 * 1024 * 1024 * 1024 bytes)
-        required_size = 53 * 1024 * 1024 * 1024  # 53GB in bytes
-        folder_size = get_folder_size(model_path)
-        
-        print(f"Current folder size: {folder_size / (1024*1024*1024):.2f}GB")
-        return folder_size >= required_size
-
-    model_exists = check_model_files(FLUX_MODEL_PATH)
-    
-    if not model_exists:
-        print(f"FLUX model not found. Downloading...")
-        try:
-            os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-            os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
-            
-            print("Starting download... This might take a while")
-            
-            def download_callback(evolution: str):
-                print(f"Download progress: {evolution}")
-            
-            snapshot_download(
-                repo_id="black-forest-labs/FLUX.1-dev",
-                local_dir=FLUX_MODEL_PATH,
-                use_auth_token=os.getenv("HF_TOKEN"),
-                tqdm_class=download_callback
-            )
-            
-            FLUX_MODEL_VOLUME.commit()
-            print("FLUX model downloaded successfully")
-        except Exception as e:
-            print(f"Warning: Failed to download/verify FLUX model - {e}")
-            raise e
-    else:
-        print(f"FLUX model already exists, skipping download")
-    
     # convert the config file list from a string to a list
     config_file_list = config_file_list_str.split(",")
 
@@ -222,6 +161,58 @@ def main(config_file_list_str: str, recover: bool = False, name: str = None):
                 raise e
 
     print_end_message(jobs_completed, jobs_failed)
+
+@app.function(
+    timeout=2700,
+    volumes={FLUX_MODEL_PATH: FLUX_MODEL_VOLUME}
+)
+def download_flux_model():
+    import os
+    from huggingface_hub import snapshot_download
+    
+    def get_folder_size(folder_path):
+        total_size = 0
+        for dirpath, filenames in os.walk(folder_path):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                total_size += os.path.getsize(file_path)
+        return total_size
+
+    def check_model_size(model_path):
+        required_size = 53 * 1024 * 1024 * 1024  # 53GB
+        folder_size = get_folder_size(model_path)
+        
+        print(f"Current folder size: {folder_size / (1024*1024*1024):.2f}GB")
+        return folder_size >= required_size
+
+    print("Checking FLUX model...")
+    os.makedirs(FLUX_MODEL_PATH, exist_ok=True)
+    
+    if check_model_size(FLUX_MODEL_PATH):
+        print("FLUX model already exists, skipping download")
+        return True
+        
+    try:
+        print("FLUX model not found. Starting download...")
+        os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+        os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+        
+        def download_callback(evolution: str):
+            print(f"Download progress: {evolution}")
+        
+        snapshot_download(
+            repo_id="black-forest-labs/FLUX.1-dev",
+            local_dir=FLUX_MODEL_PATH,
+            use_auth_token=os.getenv("HF_TOKEN"),
+            tqdm_class=download_callback
+        )
+        
+        FLUX_MODEL_VOLUME.commit()
+        print("FLUX model downloaded successfully")
+        return True
+    except Exception as e:
+        print(f"Error downloading FLUX model: {e}")
+        return False
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
