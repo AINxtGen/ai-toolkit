@@ -269,11 +269,8 @@ if not exist "config/modal_train_lora_flux.yaml" (
 
 echo All required files are present.
 echo.
-echo [1/2] Downloading FLUX model (this may take a while)...
-modal run --detach run_modal.py::download_flux_model
-echo.
-echo Please wait for the model download to complete before continuing.
-echo You can monitor the download progress at: https://modal.com/logs
+echo [1/2] Checking/Downloading FLUX model if needed (this may take a while)...
+modal run download_model.py
 echo.
 echo [2/2] Starting training process...
 modal run --detach run_modal.py::main --config-file-list-str=/root/ai-toolkit/config/modal_train_lora_flux.yaml

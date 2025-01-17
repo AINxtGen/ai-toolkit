@@ -2,7 +2,7 @@
 job: extension
 config:
   # this name will be the folder and filename name
-  name: "woven_seagrass_basket_v1"
+  name: "4lv4_v1_cap"
   process:
     - type: 'sd_trainer'
       # root folder to save training sessions/samples/weights
@@ -12,7 +12,7 @@ config:
       device: cuda:0
       # if a trigger word is specified, it will be added to captions of training data if it does not already exist
       # alternatively, in your captions you can add [trigger] and it will be replaced with the trigger word
-      trigger_word: "w0v3n"
+      trigger_word: "4lv4"
       network:
         type: "lora"
         linear: 16
@@ -28,7 +28,7 @@ config:
         # on windows, escape back slashes with another backslash so
         # "C:\\path\\to\\images\\folder"
         # your dataset must be placed in /ai-toolkit and /root is for modal to find the dir:
-        - folder_path: "/root/ai-toolkit/woven_seagrass_basket"
+        - folder_path: "/root/ai-toolkit/4lv4_v1_cap"
           caption_ext: "txt"
           caption_dropout_rate: 0.05  # will drop out the caption 5% of time
           shuffle_tokens: false  # shuffle caption order, split by commas
@@ -64,7 +64,7 @@ config:
         # check https://github.com/ostris/ai-toolkit/issues/84, download the model locally and
         # place it like "/root/ai-toolkit/FLUX.1-dev"
         # name_or_path: "black-forest-labs/FLUX.1-dev"
-        name_or_path: "/root/ai-toolkit/FLUX.1-dev"
+        name_or_path: "/root/FLUX.1-dev"
         is_flux: true
         quantize: false  # run 8bit mixed precision
 #        low_vram: true  # uncomment this if the GPU is connected to your monitors. It will use less vram to quantize, but is slower.
@@ -74,7 +74,9 @@ config:
         width: 1024
         height: 1024
         prompts:
-          - "a woven seagrass basket placed on a clean, white table. The basket is rectangular in shape and divided into multiple compartments, making it suitable for organizing condiments and small bottles. The compartments hold a variety of items, including sauce bottles, seasoning jars, and condiments such as ketchup, mayonnaise, and oil. The natural light brown color of the seagrass material contrasts nicely with the modern white tabletop and surrounding items. The basket is both functional and aesthetically pleasing, ideal for a kitchen or dining setting."
+          - "Instyle of 4lv4, A surreal image shows a large cartoonish figure stepping over an urban street. The figure wears a pink hat, a striped shirt, blue pants, pink shoes. The figure has an extended arm as if taking a selfie. The background shows classic buildings on a cobblestone road. The sky is a clear blue, suggesting daylight. The image has a whimsical, playful tone. The perspective is low, emphasizing the size of the figure."
+          - "In style of 4lv4, The image depicts an urban scene featuring a giant, stylized woman in a red suit holding a laptop. She is overlaid on a street with tall buildings and a neoclassical building with columns. The woman is cartoonish with simple, flat features, while the buildings are realistically rendered, creating a stark juxtaposition.  The background includes pedestrians and city structures, and the lighting appears to be daylight. The mood is surreal and whimsical due to the contrast in size and style between the figure and the buildings."
+          - "Instyle of 4lv4, The image shows a stylized, large figure integrated into an urban scene. The cartoon-like figure, with a pink top and large brown hands, appears to interact with the buildings. The figure’s hand is raised towards the sky, its lines and soft edges juxtaposed against the hard lines of the skyscrapers. The city buildings are tall and grey, with geometric shapes, under a cloudy sky. The perspective is low-angle, emphasizing the size of both the buildings and the figure. The overall atmosphere is playful and surreal, blending fantasy with reality."
         neg: ""  # not used on flux
         seed: 42
         walk_seed: true

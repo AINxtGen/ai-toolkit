@@ -28,15 +28,13 @@ model_volume = modal.Volume.from_name("flux-lora-models", create_if_missing=True
 MOUNT_DIR = "/root/ai-toolkit/modal_output"  # modal_output, due to "cannot mount volume on non-empty path" requirement
 
 FLUX_MODEL_VOLUME = modal.Volume.from_name(
-    "flux-base-models", 
-    create_if_missing=True
+    "flux-base-model", 
 )
-FLUX_MODEL_PATH = "/root/ai-toolkit/FLUX.1-dev"
+FLUX_MODEL_PATH = "/root/FLUX.1-dev"
 
-# define modal app
-image = (
+# Image for training app
+training_image = (
     modal.Image.from_registry("nvidia/cuda:12.4.0-devel-ubuntu22.04", add_python="3.12")
-    # install required system and pip packages, more about this modal approach: https://modal.com/docs/examples/dreambooth_app
     .apt_install("libgl1", "libglib2.0-0")
     .pip_install(
         "python-dotenv",
@@ -85,10 +83,10 @@ image = (
     )
 )
 
-# create the Modal app with the necessary mounts and volumes
+# Training app
 app = modal.App(
     name="flux-lora-training", 
-    image=image,
+    image=training_image,
     volumes={
         MOUNT_DIR: model_volume,
         FLUX_MODEL_PATH: FLUX_MODEL_VOLUME
@@ -126,9 +124,6 @@ def print_end_message(jobs_completed, jobs_failed):
     timeout=7200  # 2 hours, increase or decrease if needed
 )
 def main(config_file_list_str: str, recover: bool = False, name: str = None):
-    if not os.path.exists(FLUX_MODEL_PATH):
-        raise Exception("FLUX model not found. Please run 'modal run run_modal.py::download_flux_model' first")
-
     # convert the config file list from a string to a list
     config_file_list = config_file_list_str.split(",")
 
@@ -161,58 +156,6 @@ def main(config_file_list_str: str, recover: bool = False, name: str = None):
                 raise e
 
     print_end_message(jobs_completed, jobs_failed)
-
-@app.function(
-    timeout=2700,
-    volumes={FLUX_MODEL_PATH: FLUX_MODEL_VOLUME}
-)
-def download_flux_model():
-    import os
-    from huggingface_hub import snapshot_download
-    
-    def get_folder_size(folder_path):
-        total_size = 0
-        for dirpath, filenames in os.walk(folder_path):
-            for filename in filenames:
-                file_path = os.path.join(dirpath, filename)
-                total_size += os.path.getsize(file_path)
-        return total_size
-
-    def check_model_size(model_path):
-        required_size = 53 * 1024 * 1024 * 1024  # 53GB
-        folder_size = get_folder_size(model_path)
-        
-        print(f"Current folder size: {folder_size / (1024*1024*1024):.2f}GB")
-        return folder_size >= required_size
-
-    print("Checking FLUX model...")
-    os.makedirs(FLUX_MODEL_PATH, exist_ok=True)
-    
-    if check_model_size(FLUX_MODEL_PATH):
-        print("FLUX model already exists, skipping download")
-        return True
-        
-    try:
-        print("FLUX model not found. Starting download...")
-        os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-        os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
-        
-        def download_callback(evolution: str):
-            print(f"Download progress: {evolution}")
-        
-        snapshot_download(
-            repo_id="black-forest-labs/FLUX.1-dev",
-            local_dir=FLUX_MODEL_PATH,
-            use_auth_token=os.getenv("HF_TOKEN"),
-            tqdm_class=download_callback
-        )
-        
-        FLUX_MODEL_VOLUME.commit()
-        print("FLUX model downloaded successfully")
-        return True
-    except Exception as e:
-        print(f"Error downloading FLUX model: {e}")
-        return False
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
