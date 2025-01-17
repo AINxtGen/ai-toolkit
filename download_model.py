@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 FLUX_MODEL_VOLUME = modal.Volume.from_name(
-    "test",
+    "flux-base-model",
     create_if_missing=True
 )
 FLUX_MODEL_PATH = "/root/FLUX.1-dev"
