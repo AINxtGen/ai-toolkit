@@ -116,7 +116,7 @@ def print_end_message(jobs_completed, jobs_failed):
     print("========================================")
 
 
-@app.function(
+@app.function( 
     # request a GPU with at least 24GB VRAM
     # more about modal GPU's: https://modal.com/docs/guide/gpu
     gpu=modal.gpu.H100(count=1), # L40S,A10G,A100,H100

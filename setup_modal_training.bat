@@ -147,12 +147,6 @@ if %errorlevel% neq 0 (
 )
 
 echo [1/6] Setting up Git configuration...
-REM Enable long paths in Windows
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v "LongPathsEnabled" /t REG_DWORD /d 1 /f >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [WARNING] Could not enable Windows long path support. Try running as Administrator.
-)
-
 REM Enable long paths in Git
 git config --system core.longpaths true
 if %errorlevel% neq 0 (
@@ -270,10 +264,28 @@ if not exist "config/modal_train_lora_flux.yaml" (
 echo All required files are present.
 echo.
 echo [1/2] Checking/Downloading FLUX model if needed (this may take a while)...
-modal run download_model.py
+
+timeout /t 1 /nobreak >nul
+
+modal run download_model.py || (
+    echo [ERROR] Failed to download FLUX model
+    pause
+    exit /b 1
+)
 echo.
+
+
+timeout /t 1 /nobreak >nul
+
 echo [2/2] Starting training process...
-modal run --detach run_modal.py::main --config-file-list-str=/root/ai-toolkit/config/modal_train_lora_flux.yaml
+
+timeout /t 1 /nobreak >nul
+
+modal run --detach run_modal.py::main --config-file-list-str=/root/ai-toolkit/config/modal_train_lora_flux.yaml || (
+    echo [ERROR] Failed to start training process
+    pause
+    exit /b 1
+)
 echo.
 echo Training process has started!
 echo You can monitor the training progress and logs at: https://modal.com/logs

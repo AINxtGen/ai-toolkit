@@ -12,7 +12,7 @@ config:
       device: cuda:0
       # if a trigger word is specified, it will be added to captions of training data if it does not already exist
       # alternatively, in your captions you can add [trigger] and it will be replaced with the trigger word
-      trigger_word: "4lv4"
+      trigger_word: "4lv4_style"
       network:
         type: "lora"
         linear: 16
