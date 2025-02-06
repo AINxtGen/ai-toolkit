@@ -7,17 +7,33 @@ This guide will help you set up the environment for training LoRA models with FL
 ## Prerequisites
 
 Before starting, make sure you have:
-- Administrator privileges on your Windows system
+- Administrator privileges on your Windows system (for Windows users)
 - Registered accounts on [Modal](https://modal.com) and [Hugging Face](https://huggingface.co)
 - Accepted FLUX.1-dev license on Hugging Face (if using it)
 
 ## Setup Instructions
 
+### For Windows Users:
+
 1. Run `setup_modal_training.bat` as Administrator
    - Right-click on the script
    - Select "Run as administrator"
 
-2. Follow the Modal token setup:
+### For MacOS Users:
+
+1. Open Terminal and navigate to the project directory
+2. Make the setup script executable:
+   ```bash
+   chmod +x setup_modal_training.sh
+   ```
+3. Run the setup script:
+   ```bash
+   ./setup_modal_training.sh
+   ```
+
+### Common Steps for Both Platforms:
+
+1. Follow the Modal token setup:
    - Go to https://modal.com/settings/tokens
    - Click "New Token"
    - Copy the command that looks like:
@@ -26,7 +42,7 @@ Before starting, make sure you have:
      ```
    - Paste the command when prompted
 
-3. Prepare required files:
+2. Prepare required files:
    - Configuration file:
    - Customize settings according to your needs in config/file modal_train_lora_flux.yaml
    - Environment file (`.env`):
@@ -40,12 +56,12 @@ Before starting, make sure you have:
 The setup script will automatically:
 1. Install required software (if not already installed):
    - Python 3.10 or higher
-   - Git
+   - Git (on MacOS, you can install it via Homebrew if needed)
 
-2. Clone the ai-toolkit repository to `C:\ai-toolkit`
-   - This location is chosen to prevent Windows path length limitations
-   - If you already have ai-toolkit in another location, please move or delete it first
-
+2. Clone the ai-toolkit repository:
+   - Windows: to `C:\ai-toolkit` (to prevent path length limitations)
+   - MacOS: to the current directory
+   
 3. Set up virtual environment and dependencies
 4. Configure Modal and Hugging Face tokens
 
