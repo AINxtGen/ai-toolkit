@@ -2,6 +2,9 @@
 
 # FLUX LoRA Training Setup Guide
 
+## Video Tutorial
+[![FLUX LoRA Training Tutorial](https://img.youtube.com/vi/Xjuz92Xmv5w/0.jpg)](https://www.youtube.com/watch?v=Xjuz92Xmv5w)
+
 This guide will help you set up the environment for training LoRA models with FLUX on Modal
 
 ## Prerequisites
